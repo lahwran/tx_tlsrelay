@@ -3,14 +3,26 @@
 # but in this case there are so many servers and clients
 # immediately adjacent that it got too confusing to user
 # "server". I kept "session", though.
+
 # note: this program contains refloops. I left those up to
 # the gc of <your interpreter here> to deal with.
 
+# note: this program doesn't make the SLIGHTEST ATTEMPT at
+# authentication. it's left up to the application protocol
+# to implement any such thing (ssl, for instance). DO NOT
+# BLINDLY TRUST THE RELAY'S SAFETY.
+
+# note: this program does not differentiate connections by
+# any sort of ID, due to not having any way to notify the
+# reverse client of what the connection's ID is on connect
+# (since it's intended to be an extra-vanilla protocol for
+# reverse-connecting side).
+
+# note: this program is ipv4-only.
+
 from collections import deque
+import argparse
 
-from sm_tcprelay import tokens
-
-from twisted.internet import reactor
 from twisted.internet.protocol import Factory, Protocol
 from twisted.protocols.basic import LineOnlyReceiver
 
@@ -20,7 +32,7 @@ class ChildSession(Protocol):
         self.transport.setTcpKeepAlive(True)
 
         if self.control_session is None:
-            self.transport.write(tokens.NOT_LINKED)
+            self.transport.write("no controller linked")
             self.transport.loseConnection()
             return
 
@@ -40,6 +52,7 @@ class PublicSession(ChildSession):
     def __init__(self):
         self.queue = deque()
         self.reverse_session = None
+        self.disconnected = False
 
     def finish_setup(self):
         self.control_session.public_ready(self)
@@ -47,7 +60,7 @@ class PublicSession(ChildSession):
     def dataReceived(self, data):
         # DOS vulnerability: connect to control session; connect to public
         # port; send lots of data without connecting to reverse port to
-        # receive it
+        # receive it.
         if not self.reverse_session:
             self.queue.append(data)
         else:
@@ -56,12 +69,7 @@ class PublicSession(ChildSession):
     def pre_deinit(self):
         if self.reverse_session:
             self.reverse_session.transport.loseConnection()
-        if self.control_session:
-            try:
-                self.control_session.queue.remove(self)
-            except ValueError:
-                pass
-            self.control_session.sendLine(tokens.EXPECT_DISCONNECT)
+        self.disconnected = True
 
 
 class ReverseSession(ChildSession):
@@ -72,12 +80,15 @@ class ReverseSession(ChildSession):
         try:
             self.public_session = self.control_session.queue.popleft()
         except IndexError:
-            self.control_session.sendLine(tokens.NO_MORE_CONNECTIONS)
+            # TODO: report to controller client that it made an
+            # extra connection?
             self.transport.loseConnection()
             return
         self.public_session.reverse_session = self
         for data in self.public_session.queue:
             self.transport.write(data)
+        if self.public_session.disconnected:
+            self.transport.loseConnection()
 
     def dataReceived(self, data):
         self.public_session.transport.write(data)
@@ -113,7 +124,7 @@ class ControlSession(LineOnlyReceiver):
         self.transport.setTcpKeepAlive(True)
 
         if not self.factory.reverse_factories:
-            self.sendLine(tokens.NO_AVAILABLE_LISTENERS)
+            self.sendLine("no_available_listeners")
             self.transport.loseConnection()
             return
 
@@ -122,8 +133,8 @@ class ControlSession(LineOnlyReceiver):
         self.reverse.control_session = self
         self.public.control_session = self
 
-        self.sendLine(tokens.YOUR_PUBLIC_LISTENER_IS + self.public.address)
-        self.sendLine(tokens.YOUR_REVERSE_LISTENER_IS + self.reverse.address)
+        self.sendLine("public_listener " + self.public.address)
+        self.sendLine("reverse_listener " + self.reverse.address)
 
     def connectionLost(self, reason):
         if not self.public:
@@ -142,16 +153,16 @@ class ControlSession(LineOnlyReceiver):
 
     def public_ready(self, public_session):
         self.queue.append(public_session)
-        self.sendLine(tokens.NEW_CONNECTION_READY)
+        self.sendLine("new_connection")
 
 
 class ControlFactory(Factory):
     protocol = ControlSession
 
-    def __init__(self):
+    def __init__(self, port_count):
         self.reverse_factories = deque()
         self.public_factories = deque()
-        for _ in range(PORT_COUNT / 2):
+        for _ in range(port_count / 2):
             reverse = ChildFactory.forProtocol(ReverseSession)
             public = ChildFactory.forProtocol(PublicSession)
             self.reverse_factories.append(reverse)
@@ -161,20 +172,33 @@ class ControlFactory(Factory):
                                     list(self.public_factories))
 
 
-# pretend these constants are in a config file
-# - hostname to announce to clients
-MYHOSTNAME = "127.0.0.1"
-# - control port
-PORT_BASE = 12000
-PORT_COUNT = 200
-assert PORT_COUNT % 2 == 0, ("as there are two ports for each service,"
-        " port count must be divisible by 2")
+def even_int(v): # pragma: no cover
+    x = int(v)
+    if x % 2 != 0:
+        raise ValueError("must be divisible by 2")
+    return x
 
-control = ControlFactory()
-reactor.listenTCP(PORT_BASE, control)
-for index, child_factory in enumerate(control.all_child_factories):
-    port = index + 1 + PORT_BASE
-    child_factory.address = "%s:%d" % (MYHOSTNAME, port)
-    reactor.listenTCP(port, child_factory)
 
-reactor.run()
+parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("port", nargs="?", default=12000, type=int,
+        help="port to listen for control connections")
+parser.add_argument("--port-count", default=200, type=even_int,
+        help="how many ports above --port to allocate for relaying")
+parser.add_argument("--myhost", default="127.0.0.1",
+        help="the host to report to clients that is 'me'")
+
+
+def main():
+    args = parser.parse_args()
+
+    from twisted.internet import reactor
+    control = ControlFactory(args.port_count)
+
+    reactor.listenTCP(args.port, control)
+    for index, child_factory in enumerate(control.all_child_factories):
+        port = index + 1 + args.port
+        child_factory.address = "%s:%d" % (args.myhost, port)
+        reactor.listenTCP(port, child_factory)
+
+    reactor.run()

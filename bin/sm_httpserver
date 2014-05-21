@@ -1,0 +1,15 @@
+#!/usr/bin/env python
+import os, sys
+
+try:
+    import _preamble
+except ImportError:
+    sys.exc_clear()
+
+from twisted.web.server import Site
+from twisted.web.static import File
+from sm_tcprelay.demo import demo
+
+resource = File(os.path.abspath('.'))
+site = Site(resource)
+demo(site)

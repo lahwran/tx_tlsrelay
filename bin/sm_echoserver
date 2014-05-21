@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+import os, sys
+
+try:
+    import _preamble
+except ImportError:
+    sys.exc_clear()
+
+from twisted.internet.protocol import Protocol, Factory
+from sm_tcprelay.demo import demo
+
+class Echo(Protocol):
+
+    def dataReceived(self, data):
+        self.transport.write(data)
+
+demo(Factory.forProtocol(Echo))
