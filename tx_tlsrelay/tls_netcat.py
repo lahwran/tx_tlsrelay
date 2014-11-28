@@ -55,6 +55,7 @@ def main():
     parser.add_argument("port", type=int)
     parser.add_argument("--tls-directory",
             default="./tls_certs", type=py.path.local)
+    parser.add_argument("-r", "--reverse-server", action="store_true")
     try:
         args = parser.parse_args()
     except:
@@ -72,7 +73,10 @@ def main():
 
     tls_keys = TLSKeys(reactor, args.tls_directory)
 
-    endpoint = tls_keys.client(args.host, args.port)
+    if args.reverse_server:
+        endpoint = tls_keys.reverse_server(args.host, args.port)
+    else:
+        endpoint = tls_keys.client(args.host, args.port)
 
     d = endpoint.connect(protocol.Factory.forProtocol(lambda *a, **kw: Netcat(reactor)))
     d.addErrback(print_and_shutdown)
