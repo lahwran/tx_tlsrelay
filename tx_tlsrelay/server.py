@@ -9,11 +9,6 @@
 # note: this program contains refloops. I left those up to
 # the gc of <your interpreter here> to deal with.
 
-# note: this program doesn't make the SLIGHTEST ATTEMPT at
-# authentication. it's left up to the application protocol
-# to implement any such thing (ssl, for instance). DO NOT
-# BLINDLY TRUST THE RELAY'S SAFETY.
-
 # note: this program does not differentiate connections by
 # any sort of ID, due to not having any way to notify the
 # reverse client of what the connection's ID is on connect

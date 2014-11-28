@@ -3,7 +3,7 @@
 import argparse
 import twisted
 
-from tx_tlsrelay.client import TCPRelayServerEndpoint
+from tx_tlsrelay.client import TLS4RelayServerEndpoint
 
 parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -28,7 +28,7 @@ def demo(factory):
 
 
     from twisted.internet import reactor
-    endpoint = TCPRelayServerEndpoint(args.host, args.port, reactor)
+    endpoint = TLS4RelayServerEndpoint(args.host, args.port, reactor)
     d = endpoint.listen(factory)
     d.addCallback(connected)
     d.addErrback(print_and_shutdown)

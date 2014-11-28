@@ -6,7 +6,6 @@ from twisted.internet.defer import Deferred
 from twisted.internet.error import CannotListenError
 from twisted.internet.protocol import Factory
 from twisted.internet import address
-from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet import interfaces
 from zope.interface import implementer
 
@@ -30,15 +29,17 @@ class Address(address._IPAddress):
 
 @implementer(interfaces.IListeningPort)
 class ControlClient(LineOnlyReceiver):
-    def __init__(self, reactor, childfactory):
+    def __init__(self, reactor, childfactory, tls_keys, listening_deferred):
         self.reactor = reactor
         self.childfactory = childfactory
         self.expected_count = 0
         self.public_address = None
         self.reverse_address = None
         self.reverse_endpoint = None
-        self.listening_deferred = Deferred()
+        self.listening_deferred = listening_deferred
         self.disconnect_deferred = Deferred()
+
+        self.tls_keys = tls_keys
 
         self.childfactory.doStart()
 
@@ -69,8 +70,8 @@ class ControlClient(LineOnlyReceiver):
 
     def message_reverse_listener(self, tail):
         self.reverse_address = addr = self._splitaddress(tail)
-        self.reverse_endpoint = TCP4ClientEndpoint(self.reactor,
-                                                    addr.host, addr.port)
+        self.reverse_endpoint = self.tls_keys.reverse_server(
+                                    addr.host, addr.port)
         if self.public_address:
             self.listening_deferred.callback(self)
 
@@ -92,15 +93,19 @@ class ControlClient(LineOnlyReceiver):
 
 
 class ControlClientFactory(Factory):
-    def __init__(self, protocol):
-        self.protocol = protocol
+    def __init__(self, reactor, childfactory, tls_keys, listening_deferred):
+        self.reactor = reactor
+        self.childfactory = childfactory
+        self.tls_keys = tls_keys
+        self.listening_deferred = listening_deferred
 
     def buildProtocol(self, addr):
-        return self.protocol
+        return ControlClient(self.reactor, self.childfactory, self.tls_keys,
+                self.listening_deferred)
 
 
 @implementer(interfaces.IStreamServerEndpoint)
-class TCPRelayServerEndpoint(object):
+class TLS4RelayServerEndpoint(object):
     def __init__(self, host, port, reactor=None):
         if reactor is None:
             from twisted.internet import reactor
@@ -110,13 +115,11 @@ class TCPRelayServerEndpoint(object):
         self.relayendpoint = self.tls_keys.client(host, port)
 
     def listen(self, childfactory):
+        listening_deferred = Deferred()
 
-        protocol = ControlClient(self.reactor, childfactory)
-        factory = ControlClientFactory(protocol)
-        connect_defer = self.relayendpoint.connect(factory)
+        factory = ControlClientFactory(self.reactor,
+                childfactory, self.tls_keys,
+                listening_deferred)
+        self.relayendpoint.connect(factory)
 
-        @connect_defer.addCallback
-        def chain(ignored_val):
-            return protocol.listening_deferred
-
-        return connect_defer
+        return listening_deferred

@@ -1,9 +1,11 @@
-Cheapo TCP Relay
-================
+Cheapo TCP/TLS Relay
+====================
 
 This was originally written as part of my interviewing process for the company I
 currently work at (as of the commit that edits this line). As it was written before
-I signed anything with that company, I own the copyright.
+I signed anything with that company, I own the copyright (verified with my boss).
+
+I'm releasing it under the MIT license. see license.txt.
 
 Explanation
 -----------
@@ -19,8 +21,8 @@ Implementation and Protocol
 ---------------------------
 
 The relay uses a very cheap approach: for each incoming connection, the server must
-initiate a new TCP connection to the relay. This has all the drawbacks associated
-with creating a new TCP connection, but means that you don't have to write a
+initiate a new TCP/TLS connection to the relay. This has all the drawbacks associated
+with creating a new TCP/TLS connection, but means that you don't have to write a
 multiplexer-protocol implementation to use it.
 
 On startup, the relay allocates a pool of listening ports. This is done ahead of time
@@ -89,8 +91,8 @@ and `bin/relayed_*server`.
 Twisted Usage
 -------------
 
-Instead of `TCP4ServerEndpoint`, use `tx_tlsrelay.client.TCPRelayServerEndpoint`
-and pass it the address of the relay you wish to use. TCPRelayServerEndpoint.listen()
+Instead of `TLS4ServerEndpoint`, use `tx_tlsrelay.client.TLS4RelayServerEndpoint`
+and pass it the address of the relay you wish to use. TLS4RelayServerEndpoint.listen()
 returns a deferred that fires with an object that implements IListeningPort;
 that object's .getHost() method returns an address object with .host and .port, which
 are your server's public address.

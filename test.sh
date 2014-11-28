@@ -27,7 +27,6 @@ function serve() {
     secondtolastpid="$lastpid"
     lastpid="$!"
     sleep 2
-    cat /tmp/address
     hostname="$(cat /tmp/address | sed 's/:.*$//')"
     port="$(cat /tmp/address | sed 's/^.*://')"
 }
@@ -47,27 +46,27 @@ function stopserver2() {
 
 serve bin/relayed_echoserver localhost $BASEPORT
 echo "--- expect to see 'hello world':"
-(echo "hello world"; sleep 0.25) | nc $hostname $port
+(echo "hello world"; sleep 2) | python -m sm_tcprelay.tls_netcat $hostname $port
 echo "---"; echo
 stopserver
 
 serve bin/relayed_echoserver localhost $BASEPORT
 echo "--- expect to see 'resumed':"
 kill -STOP $lastpid
-echo "hello world" | nc $hostname $port
+echo "hello world" | python -m sm_tcprelay.tls_netcat $hostname $port
 kill -CONT $lastpid
-(echo "resumed"; sleep 0.25) | nc $hostname $port
+(echo "resumed"; sleep 2) | python -m sm_tcprelay.tls_netcat $hostname $port
 echo "---"; echo
 stopserver
 
 echo "--- expect to see 'no controller linked':"
-sleep 0.25 | nc $hostname $port
+sleep 2 | nc $hostname $port
 echo
 echo "---"; echo
 
 serve bin/relayed_echoserver localhost $BASEPORT
 echo "--- expect to see 'hi!' once every second, three times:"
-(for x in 1 2 3; do echo "hi!"; sleep 1; done) | nc $hostname $port
+(for x in 1 2 3; do echo "hi!"; sleep 1; done) | python -m sm_tcprelay.tls_netcat $hostname $port
 echo "---"; echo
 stopserver
 
