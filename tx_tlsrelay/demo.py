@@ -1,3 +1,5 @@
+# This file is licensed MIT. see license.txt.
+
 import argparse
 import twisted
 

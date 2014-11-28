@@ -29,7 +29,7 @@ import sys, os
 
 path = os.path.abspath(os.path.realpath(sys.argv[0]))
 while os.path.dirname(path) != path:
-    if os.path.exists(os.path.join(path, 'sm_tcprelay', '__init__.py')):
+    if os.path.exists(os.path.join(path, 'tx_tlsrelay', '__init__.py')):
         sys.path.insert(0, path)
         break
     path = os.path.dirname(path)

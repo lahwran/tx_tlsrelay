@@ -1,3 +1,5 @@
+# This file is licensed MIT. see license.txt.
+
 # note: usually I'd translate twisted's parlance of
 # "factory" and "protocol" to "server" and "session",
 # but in this case there are so many servers and clients

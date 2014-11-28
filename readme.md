@@ -1,11 +1,19 @@
 Cheapo TCP Relay
 ================
 
+This was originally written as part of my interviewing process for the company I
+currently work at (as of the commit that edits this line). As it was written before
+I signed anything with that company, I own the copyright.
+
+Explanation
+-----------
+
 First, lingo:
 
 - "server" means a program using the relay to provide a service
 - "client" means a program connecting to the relay to use a service
 - "relay" means the relay server itself; "server" will not be used to refer to this
+
 
 Implementation and Protocol
 ---------------------------
@@ -21,10 +29,6 @@ processes on the system to grab ownership of the ports. The number of ports the 
 allocates is configurable via --port-count, and must be divisible by 2, as the relay
 assigns two ports to each server: a public port and a reverse port.
 
-**IMPORTANT**: THE RELAY MAKES NO ATTEMPT WHATSOEVER TO AUTHENTICATE CONNECTIONS. IT
-IS TRIVIAL FOR OTHER PROCESSES TO CONNECT TO THE REVERSE PORT AS A CONNECTION COMES
-IN, THEREBY HIJACKING IT. Make *sure* to use SSL if you need to trust anything.
-
 Other notes: the relay only supports ipv4 (it wouldn't be too hard to add ipv6, but
 I didn't bother). Also, the relay doesn't have any way to differentiate connections.
 However, as long as you don't write bugs and nobody tries to mess you up, everything
@@ -35,7 +39,7 @@ Usage
 
 Quick version:
 
-1. start `bin/sm_tcprelay`. defaults to port 12000, or takes port on command line;
+1. start `bin/tx_tlsrelay`. defaults to port 12000, or takes port on command line;
    see --help. of note is --myhost, which should be set if used anywhere but localhost.
 2. connect to control port
 3. make sure the server did not send you a `no_available_listeners` message; if it
@@ -79,13 +83,13 @@ Example session:
 - `server -> relay` server connects to localhost:12001
 - server uses this new connection to communicate with client
 
-For a reference implementation and examples you can run, see `sm_tcprelay.client`
-and `bin/sm_*server`.
+For a reference implementation and examples you can run, see `tx_tlsrelay.client`
+and `bin/relayed_*server`.
 
 Twisted Usage
 -------------
 
-Instead of `TCP4ServerEndpoint`, use `sm_tcprelay.client.TCPRelayServerEndpoint`
+Instead of `TCP4ServerEndpoint`, use `tx_tlsrelay.client.TCPRelayServerEndpoint`
 and pass it the address of the relay you wish to use. TCPRelayServerEndpoint.listen()
 returns a deferred that fires with an object that implements IListeningPort;
 that object's .getHost() method returns an address object with .host and .port, which
@@ -96,4 +100,4 @@ See also:
 - http://twistedmatrix.com/documents/current/core/howto/endpoints.html
 - the mentions of endpoints in
   https://twistedmatrix.com/documents/current/core/howto/servers.html
-- `bin/sm_echoserver` and `bin/sm_httpserver`
+- `bin/relayed_echoserver` and `bin/relayed_httpserver`

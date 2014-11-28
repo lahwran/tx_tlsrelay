@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# This file is licensed MIT. see license.txt.
 import os, sys
 
 try:

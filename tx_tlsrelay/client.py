@@ -1,3 +1,4 @@
+# This file is licensed MIT. see license.txt.
 # note: this program is ipv4-only.
 
 from twisted.protocols.basic import LineOnlyReceiver

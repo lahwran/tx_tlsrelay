@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# This file is licensed MIT. see license.txt.
 # warning: I'm bad at bash. this is a bit hacky
 
 # set up
@@ -16,7 +17,7 @@ BASEPORT=5000
 
 # reset and start relay
 coverage erase
-coverage run --rcfile=.coveragerc -p bin/sm_tcprelay $BASEPORT --port-count 2 &
+coverage run --rcfile=.coveragerc -p bin/tx_tlsrelay $BASEPORT --port-count 2 &
 relaypid="$!"
 sleep 0.5
 
@@ -43,13 +44,13 @@ function stopserver2() {
 }
 
 
-serve bin/sm_echoserver localhost $BASEPORT
+serve bin/relayed_echoserver localhost $BASEPORT
 echo "--- expect to see 'hello world':"
 (echo "hello world"; sleep 0.25) | nc $hostname $port
 echo "---"; echo
 stopserver
 
-serve bin/sm_echoserver localhost $BASEPORT
+serve bin/relayed_echoserver localhost $BASEPORT
 echo "--- expect to see 'resumed':"
 kill -STOP $lastpid
 echo "hello world" | nc $hostname $port
@@ -63,15 +64,15 @@ sleep 0.25 | nc $hostname $port
 echo
 echo "---"; echo
 
-serve bin/sm_echoserver localhost $BASEPORT
+serve bin/relayed_echoserver localhost $BASEPORT
 echo "--- expect to see 'hi!' once every second, three times:"
 (for x in 1 2 3; do echo "hi!"; sleep 1; done) | nc $hostname $port
 echo "---"; echo
 stopserver
 
 echo "--- expect to see a RelayFullError and a failure to kill a process"
-serve bin/sm_echoserver localhost $BASEPORT
-serve bin/sm_echoserver localhost $BASEPORT
+serve bin/relayed_echoserver localhost $BASEPORT
+serve bin/relayed_echoserver localhost $BASEPORT
 stopserver2
 stopserver
 echo "---"; echo
