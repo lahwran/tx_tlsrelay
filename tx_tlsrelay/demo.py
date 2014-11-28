@@ -3,7 +3,7 @@
 import argparse
 import twisted
 
-from sm_tcprelay.client import TCPRelayServerEndpoint
+from tx_tlsrelay.client import TCPRelayServerEndpoint
 
 parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)

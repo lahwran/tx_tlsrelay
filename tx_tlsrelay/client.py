@@ -10,6 +10,8 @@ from twisted.internet.endpoints import TCP4ClientEndpoint
 from twisted.internet import interfaces
 from zope.interface import implementer
 
+from tx_tlsrelay.tlskeys import TLSKeys
+
 
 class RelayFullError(CannotListenError):
     def __init__(self):
@@ -103,9 +105,9 @@ class TCPRelayServerEndpoint(object):
         if reactor is None:
             from twisted.internet import reactor
         self.reactor = reactor
+        self.tls_keys = TLSKeys(reactor, "./tls_certs")
 
-        self.relayendpoint = TCP4ClientEndpoint(reactor,
-                host, port)
+        self.relayendpoint = self.tls_keys.client(host, port)
 
     def listen(self, childfactory):
 

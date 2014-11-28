@@ -7,5 +7,5 @@ try:
 except ImportError:
     sys.exc_clear()
 
-from sm_tcprelay.server import main
+from tx_tlsrelay.server import main
 main()

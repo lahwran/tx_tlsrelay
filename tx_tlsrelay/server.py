@@ -28,6 +28,8 @@ import argparse
 from twisted.internet.protocol import Factory, Protocol
 from twisted.protocols.basic import LineOnlyReceiver
 
+from tx_tlsrelay.tlskeys import TLSKeys
+
 
 class ChildSession(Protocol):
     def connectionMade(self):
@@ -196,8 +198,9 @@ def main():
 
     from twisted.internet import reactor
     control = ControlFactory(args.port_count)
+    tls_keys = TLSKeys(reactor, "./tls_certs")
 
-    reactor.listenTCP(args.port, control)
+    tls_keys.server(args.port).listen(control)
     for index, child_factory in enumerate(control.all_child_factories):
         port = index + 1 + args.port
         child_factory.address = "%s:%d" % (args.myhost, port)

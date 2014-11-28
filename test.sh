@@ -26,7 +26,8 @@ function serve() {
     coverage run --rcfile=.coveragerc -p "$@" > /tmp/address &
     secondtolastpid="$lastpid"
     lastpid="$!"
-    sleep 0.5
+    sleep 2
+    cat /tmp/address
     hostname="$(cat /tmp/address | sed 's/:.*$//')"
     port="$(cat /tmp/address | sed 's/^.*://')"
 }
