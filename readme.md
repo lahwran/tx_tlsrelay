@@ -74,13 +74,17 @@ Example session:
 - `server -> relay` server connects to localhost:12000
 - `server <- relay` relay sends back lines:
 
+
     public_listener localhost:12101
     reverse_listener localhost:12001
+
 
 - `relay <- client` client connects to localhost:12101
 - `server <- relay` relay informs server of presence of new client:
 
+
     new_connection
+
 
 - `server -> relay` server connects to localhost:12001
 - server uses this new connection to communicate with client
