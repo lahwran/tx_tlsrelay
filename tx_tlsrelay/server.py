@@ -19,6 +19,7 @@
 
 from collections import deque
 import argparse
+import py
 
 from twisted.internet.protocol import Factory, Protocol
 from twisted.protocols.basic import LineOnlyReceiver
@@ -186,6 +187,8 @@ parser.add_argument("--port-count", default=200, type=even_int,
         help="how many ports above --port to allocate for relaying")
 parser.add_argument("--myhost", default="127.0.0.1",
         help="the host to report to clients that is 'me'")
+parser.add_argument("-k", "--keys", type=py.path.local,
+        default="./relay_server_certs")
 
 
 def main():
@@ -193,7 +196,7 @@ def main():
 
     from twisted.internet import reactor
     control = ControlFactory(args.port_count)
-    tls_keys = TLSKeys(reactor, "./tls_certs")
+    tls_keys = TLSKeys(reactor, args.keys)
 
     tls_keys.server(args.port).listen(control)
     for index, child_factory in enumerate(control.all_child_factories):

@@ -2,6 +2,7 @@
 
 import argparse
 import twisted
+import py
 
 from tx_tlsrelay.tlskeys import TLSKeys
 
@@ -11,6 +12,10 @@ parser.add_argument("host", default="127.0.0.1",
         help="the host to report to clients that is 'me'")
 parser.add_argument("port", default=12000, type=int,
         help="port to listen for control connections")
+parser.add_argument("-a", "--application-certs", type=py.path.local,
+        default="./application_certs")
+parser.add_argument("-c", "--relay-certs", type=py.path.local,
+        default="./relay_client_certs")
 
 def demo(factory):
     args = parser.parse_args()
@@ -28,8 +33,8 @@ def demo(factory):
 
     from twisted.internet import reactor
 
-    relay_keys = TLSKeys(reactor, "./tls_certs")
-    application_keys = relay_keys
+    relay_keys = TLSKeys(reactor, args.relay_certs)
+    application_keys = TLSKeys(reactor, args.application_certs)
 
     relay_client = relay_keys.client(args.host, args.port)
     server = application_keys.relayed_server(relay_client)

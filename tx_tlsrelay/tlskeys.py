@@ -39,31 +39,46 @@ class TLSKeys(object):
         cadata = basedir.join("ca.crt.pem").read()
         self.ca_cert = ssl.Certificate.loadPEM(cadata)
 
-        #
-        clientdata = (
-            basedir.join("client.crt.pem").read_binary()
-            + basedir.join("client.key.pem").read_binary()
-        )
-        self.client_cert = ssl.PrivateCertificate.loadPEM(clientdata)
-        self.client_options = self.client_cert.options(self.ca_cert)
+        try:
+            clientdata = (
+                basedir.join("client.crt.pem").read_binary()
+                + basedir.join("client.key.pem").read_binary()
+            )
+        except py.error.ENOENT:
+            self.has_client = False
+        else:
+            self.has_client = True
+            self.client_cert = ssl.PrivateCertificate.loadPEM(clientdata)
+            self.client_options = self.client_cert.options(self.ca_cert)
 
         #
-        serverdata = (
-            basedir.join("server.crt.pem").read_binary()
-            + basedir.join("server.key.pem").read_binary()
-        )
-        self.server_cert = ssl.PrivateCertificate.loadPEM(serverdata)
-        self.server_options = self.server_cert.options(self.ca_cert)
+        try:
+            serverdata = (
+                basedir.join("server.crt.pem").read_binary()
+                + basedir.join("server.key.pem").read_binary()
+            )
+        except py.error.ENOENT:
+            self.has_server = False
+        else:
+            self.has_server = True
+            self.server_cert = ssl.PrivateCertificate.loadPEM(serverdata)
+            self.server_options = self.server_cert.options(self.ca_cert)
 
     def server(self, port):
+        if not self.has_server:
+            raise RuntimeError("Missing server certs!")
         return SSL4ServerEndpoint(self.reactor, port,
                 self.server_options)
 
     def client(self, host, port):
+        if not self.has_client:
+            raise RuntimeError("Missing client certs!")
         return SSL4ClientEndpoint(self.reactor, host, port,
                 self.client_options)
 
     def relayed_server(self, control_endpoint):
+        if not self.has_server:
+            raise RuntimeError("Missing server certs!")
         return TLS4RelayServerEndpoint(control_endpoint,
                 self.server_options)
 

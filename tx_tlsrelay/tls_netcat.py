@@ -53,8 +53,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("host")
     parser.add_argument("port", type=int)
-    parser.add_argument("--tls-directory",
-            default="./tls_certs", type=py.path.local)
+    parser.add_argument("-k", "--tls-directory",
+            type=py.path.local, required=True)
     parser.add_argument("-r", "--reverse-server", action="store_true")
     try:
         args = parser.parse_args()

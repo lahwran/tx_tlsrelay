@@ -43,19 +43,22 @@ function stopserver2() {
     set -e
 }
 
+function app_nc () {
+    python -m tx_tlsrelay.tls_netcat -k application_certs "$@"
+}
 
 serve bin/relayed_echoserver localhost $BASEPORT
 echo "--- expect to see 'hello world':"
-(echo "hello world"; sleep 2) | python -m tx_tlsrelay.tls_netcat $hostname $port
+(echo "hello world"; sleep 2) | app_nc $hostname $port
 echo "---"; echo
 stopserver
 
 serve bin/relayed_echoserver localhost $BASEPORT
 echo "--- expect to see 'resumed':"
 kill -STOP $lastpid
-echo "hello world" | python -m tx_tlsrelay.tls_netcat $hostname $port
+echo "hello world" | app_nc $hostname $port
 kill -CONT $lastpid
-(echo "resumed"; sleep 2) | python -m tx_tlsrelay.tls_netcat $hostname $port
+(echo "resumed"; sleep 2) | app_nc $hostname $port
 echo "---"; echo
 stopserver
 
@@ -66,7 +69,7 @@ echo "---"; echo
 
 serve bin/relayed_echoserver localhost $BASEPORT
 echo "--- expect to see 'hi!' once every second, three times:"
-(for x in 1 2 3; do echo "hi!"; sleep 1; done) | python -m tx_tlsrelay.tls_netcat $hostname $port
+(for x in 1 2 3; do echo "hi!"; sleep 1; done) | app_nc $hostname $port
 echo "---"; echo
 stopserver
 
