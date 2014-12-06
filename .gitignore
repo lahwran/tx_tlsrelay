@@ -2,3 +2,6 @@ ve/
 *.pyc
 .coverage
 htmlcov/
+*.egg-info
+dist/
+*_certs/
